@@ -1,4 +1,4 @@
-# clase 1: Node.js
+# Clase 1: Node.js
 
 
 ## JavaScript
@@ -813,152 +813,122 @@ console.log('Hello World!');
 
 ####  Child Process
 
-- Ideal para tareas pesadas, inestables o muy lentas
+- Ideal para tareas pesadas, inestables o muy lentas.
 - Nos permite usar comandos del sistema.
 - Podemos lanzar aplicaciones basadas en otros lenguajes o sistemas.
 
-- **Creando hijos y usando spawn**
--  *spawn* devuelve un *stream*
+`spawn` devuelve un **stream**:
 
-  ```javascript
-  const spawn = require('child_process').spawn;
-  const ping = spawn('ping', ['fictizia.com']);
+```javascript
+const spawn = require('child_process').spawn;
+const ping = spawn('ping', ['fictizia.com']);
 
-  ping.stdout.setEncoding('utf8');
-  ping.stdout.on('data', console.log);
-  ```
+ping.stdout.setEncoding('utf8');
+ping.stdout.on('data', console.log);
+```
 
-- **Creando hijos y usando exec**
--  *exec* retorna un *buffer*
+`exec` retorna un **buffer**:
 
-  ```javascript
-  const { exec } = require('child_process');
+```javascript
+const { exec } = require('child_process');
 
   // cat solo funciona en UNIX
-  exec('cat README.md', (err, stdout, stderr) => {
-    if(!err){
-      console.log('El contenido de nuestro archivo', stdout)
-    } else {
-      console.log('Error: '+err)
-    }
+exec('cat README.md', (err, stdout, stderr) => {
+  if(!err){
+    console.log('El contenido de nuestro archivo', stdout)
+  } else {
+    console.log('Error: '+err)
+  }
+});
+```
+
+#### Cluster
+
+> Cada instancia de Node.js se ejecuta en un único hilo. Para sacarle partido a los procesadores de varios núcleos utilizaremos la librería `cluster`.
+
+**Creando un servidor sin utilizar clusters**:
+
+```javascript
+const http = require('http');
+const url = require('url');
+
+const server = http.createServer().listen(8080);
+
+server.on('request', (req, res) => {
+  const pathname = url.parse(req.url).pathname;
+
+  if (pathname === '/kill') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain'
+    });
+    res.end('Has matado el monohilo. PID: ' + process.pid);
+    process.exit(0);
+  } else {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain'
+    });
+    res.end('Hola desde el monohilo. PID: ' + process.pid);
+  }
+});
+```
+
+**Creando un servidor utilizando clusters**:
+- El proceso hijo que cae se vuelve a levantar.
+- El proceso padre se mantiene "separado"
+
+```javascript
+const cluster = require('cluster');
+const http = require('http');
+const url = require('url');
+const cpus = require('os').cpus().length; // nproc
+
+if (cluster.isMaster) {
+  console.log('Proceso maestro con PID:', process.pid);
+
+  for (let i = 0; i < cpus; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker) => {
+    console.log('hijo con PID ' + worker.process.pid + ' muerto');
+    cluster.fork();
   });
-  ```
 
-- **Manejando hijos:**
+} else {
+  console.log('Arrancado hijo con PID:', process.pid);
 
-  ```javascript
-  const { spawn } = require('child_process');
-
-  if(process.argv[2] === 'hijo'){
-    console.log('Estoy dentro del proceso hijo');
-  } else {
-    console.log('Estoy dentro del proceso padre');
-    const hijo = spawn(process.execPath, [__filename, 'hijo'])
-    hijo.stdout.pipe(process.stdout)
-  }
-  ```
-
-- **Manejando hijos (con herencia):**
-
-  ```javascript
-  const spawn = require('child_process').spawn
-
-  if(process.argv[2] === 'hijo'){
-    console.log('Estoy dentro del proceso hijo');
-  } else {
-    console.log('Estoy dentro del proceso padre');
-    const hijo = spawn(process.execPath, [__filename, 'hijo'], {
-      stdio: 'inherit'
-    })
-  }
-  ```
-
-### Cluster
-
-> A single instance of Node.js runs in a single thread. To take advantage of multi-core systems, the user will sometimes want to launch a cluster of Node.js processes to handle the load.
-
-- **Sin usar Cluster**
-
-  ```javascript
-  const http = require('http');
-  const url = require('url');
-
-  const server = http.createServer().listen(8080);
+  const server = http.createServer().listen(process.env.PORT);
 
   server.on('request', (req, res) => {
-      const pathname = url.parse(req.url).pathname;
-      if (pathname === '/kill') {
-          res.writeHead(200, {
-              'Content-Type': 'text/plain'
-          });
-          res.end('Has matado el monohilo. PID: ' + process.pid);
-          process.exit(0);
-      } else {
-          res.writeHead(200, {
-              'Content-Type': 'text/plain'
-          });
-          res.end('Hola desde el monohilo. PID: ' + process.pid);
-      }
-  });
-  ```
-
-- **Usando Cluster.**
-  - El proceso hijo que cae se vuelve a levantar.
-  - El proceso padre se mantiene "separado"
-
-  ```javascript
-  const cluster = require('cluster');
-  const http = require('http');
-  const url = require('url');
-  const cpus = require('os').cpus().length; // nproc
-
-  if (cluster.isMaster) {
-    console.log('Proceso maestro con PID:', process.pid);
-
-    for (let i = 0; i < cpus; i++) {
-      cluster.fork();
+    const pathname = url.parse(req.url).pathname;
+    if (pathname === '/kill') {
+      res.writeHead(200, {
+          'Content-Type': 'text/plain'
+      });
+      res.end('Has matado al proceso hijo ' + process.pid);
+      process.exit(0);
+    } else {
+      res.writeHead(200, {
+          'Content-Type': 'text/plain'
+      });
+      res.end('Hola desde ' + process.pid);
     }
+  });
+}
+```
 
-    cluster.on('exit', (worker) => {
-      console.log('hijo con PID ' + worker.process.pid + ' muerto');
-      cluster.fork();
-    });
+> [Taking Advantage of Multi-Processor Environments in Node.js](http://blog.carbonfive.com/2014/02/28/taking-advantage-of-multi-processor-environments-in-node-js/#tldr)
 
-  } else {
-    console.log('Arrancado hijo con PID:', process.pid);
+**Librerias:**:
+- [luster](https://github.com/nodules/luster)
+- [cluster-map](https://www.npmjs.com/package/cluster-map)
+- [PM2](https://www.npmjs.com/package/pm2)
 
-    const server = http.createServer().listen(process.env.PORT);
-
-    server.on('request', (req, res) => {
-      const pathname = url.parse(req.url).pathname;
-      if (pathname === '/kill') {
-        res.writeHead(200, {
-            'Content-Type': 'text/plain'
-        });
-        res.end('Has matado al proceso hijo ' + process.pid);
-        process.exit(0);
-      } else {
-        res.writeHead(200, {
-            'Content-Type': 'text/plain'
-        });
-        res.end('Hola desde ' + process.pid);
-      }
-    });
-  }
-  ```
-
-- [Taking Advantage of Multi-Processor Environments in Node.js](http://blog.carbonfive.com/2014/02/28/taking-advantage-of-multi-processor-environments-in-node-js/#tldr)
-
-- **Librerias:**
-  - [luster](https://github.com/nodules/luster)
-  - [cluster-map](https://www.npmjs.com/package/cluster-map)
-  - [PM2](https://www.npmjs.com/package/pm2)
-
-### Buffer
+#### Buffer
 
 - Nos ofrece la posibilidad de alamacenar datos sin procesar
 - Una vez iniciados no puede modificarse el tamaño
-- Tamaño máximo 1GB
+- **Tamaño máximo 1GB**
 
 ```javascript
 const buf1 = new Buffer(10); // buf1.length = 10
@@ -979,305 +949,206 @@ console.log("===================================");
 ```
 
 
-### Stream
+#### Stream
 
-- Gestionamos el *flujo de datos*
-- Muy usados por librerías y modulos (ej. `gulp`)
+- Se utilizan para gestionar un **flujo de datos**
+- Muy usados por librerías y módulos (ej. `gulp`)
 - Capa de abstracción para operaciones con datos
 - Lógica de tuberias (cadena de procesos)
-- Gestiona el *buffer* por si mismo
-- Tipos:
-  - Readable *Lectura*
-    - Eventos (data, error, end)
-  - Writable *Escritura*
-    - Eventos (drain, error, finish)
-  - Duplex *Ambos*
-  - Transform *Transformación de datos*
-- **Función .pipe()**
-  - Simple:
-  `origen.pipe(destino);`
-  - Concatenando:
-  `origen.pipe(destino).pipe(otroDestino);`
+- Gestiona el **buffer** por si mismo
 
-- **Ejemplo: Stream multimedia**
+**Tipos**:
+- Readable (**Lectura**): Eventos (data, error, end)
+- Writable (**Escritura**): Eventos (drain, error, finish)
+- Duplex (**Ambos**)
+- Transform (**Transformación de datos**)
 
-  ```javascript
-  const http = require('http');
-  const fs = require('fs');
+**Función `.pipe()`**:
+- Simple: `origen.pipe(destino);`
+- Concatenando: `origen.pipe(destino).pipe(otroDestino);`
 
-  http.createServer((req, res) => {
-    const song = 'song.mp3';
-    const stat = fs.statSync(song);
+**Ejemplo: Stream multimedia**:
 
-    res.writeHead(200, {
-      'Content-Type': 'audio/mpeg',
-      'Content-Length': stat.size
-    });
+```javascript
+const http = require('http');
+const fs = require('fs');
 
-    const readableStream = fs.createReadStream(song);
-    readableStream.pipe(res);
-  }).listen(8080);
-  ```
+http.createServer((req, res) => {
+  const song = 'song.mp3';
+  const stat = fs.statSync(song);
 
-- **Stream y ficheros**
+  res.writeHead(200, {
+    'Content-Type': 'audio/mpeg',
+    'Content-Length': stat.size
+  });
 
-  ```javascript
-  const fs = require('fs');
+  const readableStream = fs.createReadStream(song);
+  readableStream.pipe(res);
+}).listen(8080);
+```
 
-  const lectura = fs.createReadStream('README.md');
-  const escritura = fs.createWriteStream('COPY.md');
+**Streams y ficheros**:
 
-  lectura.pipe(escritura);
-  ```
+```javascript
+const fs = require('fs');
 
-- **Comprueba como el tiempo de respuesta es menor utilizando streams**
+const lectura = fs.createReadStream('README.md');
+const escritura = fs.createWriteStream('COPY.md');
 
-  ```javascript
-  const http = require('http');
-  const fs = require('fs');
-  const url = require('url');
+lectura.pipe(escritura);
+```
 
-  function createBigFile() {
-    const file = fs.createWriteStream('bigfile.txt');
+**Comprueba como el tiempo de respuesta es menor utilizando streams**:
 
-    for(let i=0; i<= 1e6; i++) {
-      file.write('Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n');
-    }
+```javascript
+const http = require('http');
+const fs = require('fs');
+const url = require('url');
 
-    file.end();
+function createBigFile() {
+  const file = fs.createWriteStream('bigfile.txt');
+
+  for(let i=0; i<= 1e6; i++) {
+    file.write('Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n');
   }
 
-  createBigFile();
+  file.end();
+}
 
-  http.createServer((request, response) => {
-    const { pathname } = url.parse(request.url);
+createBigFile();
 
-    if (pathname === '/stream') {
-      const bigfile = fs.createReadStream('bigfile.txt');
+http.createServer((request, response) => {
+  const { pathname } = url.parse(request.url);
 
-      bigfile.pipe(response);
-    } else {
-      fs.readFile('bigfile.txt', 'utf-8', (err, data) => {
-        response.end(data);
-      });
-    }
-  }).listen(8080);
-  ```
+  if (pathname === '/stream') {
+    const bigfile = fs.createReadStream('bigfile.txt');
 
-
-### Variables del Entorno
-
-- Conocer todas las variables disponibles en el entorno
-  - Windows:
-
-  ```
-  SET
-  ```
-
-  - UNIX:
-
-  ```
-  env
-  ```
-
-- Guardar nuevas variables en el entorno
-  - Windows:
-
-  ```
-  SET ALGO='mi secreto'
-  ```
-
-  - UNIX:
-
-  ```
-  export ALGO='mi secreto'
-  ```
-
-- Recuperar las variables con Node.js
-
-  ```javascript
-  const datoRecuperado = process.env.ALGO;
-  console.log(process.env.ALGO);
-  ```
-
-- Creando variables del entorno limitadas a Node.js y temporales (SOLO UNIX)
-  - Arrancando...
-
-  ```
-  NODE_ENV=production node app.js
-  ```
-
-  - Usando datos...
-
-  ```javascript
-  if(process.env.NODE_ENV === "production"){
-    console.log("Entramos en modo producción");
-  } else if (process.env.NODE_ENV === "development"){
-    console.log("Entramos en modo desarrollo");
+    bigfile.pipe(response);
   } else {
-    console.log("Entramos en modo desconocido. ¡Revisa las variables del entorno!");
+    fs.readFile('bigfile.txt', 'utf-8', (err, data) => {
+      response.end(data);
+    });
   }
-  ```
+}).listen(8080);
+```
 
-- **Alternativas**
-  - [dotenv - librería para Nodejs](https://github.com/motdotla/dotenv)
 
-### Modularización
+#### Variables del Entorno
+
+¿Cómo ver todas las variables disponibles en el entorno?
+- Windows: `SET`
+- UNIX: `env`
+
+Crear nuevas variables en el entorno:
+- Windows: `SET FOO='Hi!'`
+- UNIX: `export FOO='Hi!'`
+
+**Recuperar las variables con Node.js**:
+
+```javascript
+const datoRecuperado = process.env.ALGO;
+console.log(process.env.ALGO);
+```
+
+Creando variables de entorno limitadas al programa que se va a ejecutar (SOLO UNIX):
+```
+FOO='Hi!' NODE_ENV=production node app.js
+```
+
+**¿Cómo recuperar los datos desde el proceso de Node.js?**:
+
+```javascript
+if(process.env.NODE_ENV === "production"){
+  console.log("Entramos en modo producción");
+} else if (process.env.NODE_ENV === "development"){
+  console.log("Entramos en modo desarrollo");
+} else {
+  console.log("Entramos en modo desconocido. ¡Revisa las variables del entorno!");
+}
+```
+
+**Alternativas**:
+- [dotenv - librería para Nodejs](https://github.com/motdotla/dotenv)
+
+#### Modularización
 
 - Especificación de [CommonJS](https://www.wikiwand.com/en/CommonJS)
 - Exports es un objeto que vamos "rellenando"
 - La asignacion al exports es inmediata. No se pueden usar callbacks o similares
-- No es necesario usar *module.exports* ya es que es global.
-  - `const exports = module.exports = {};`
-- Es importante controlar la reasignación de *module.exports*
+- No es necesario usar **module.exports** ya es que es global (`const exports = module.exports = {};`)
+- Es importante controlar la reasignación de **module.exports**
 
-### Modularización: Usando exports
+**Exportar los datos:**
 
-- **Exportar los datos:**
+```javascript
+// config.js
+const config = {
+  token: "XXXXXXX",
+};
 
-  ```javascript
-  // archivo -> config.js
+module.exports = config;
+```
 
-  const datoPrivado = "Lo que pasa en Node... se queda en Node";
-  const datoCompartido = "Hola! desde Config.js"
+**Importar los datos:**
 
-  function privada (){
-    return datoPrivado;
-  }
+```javascript
+// app.js
+const config = require('./config');
 
-  exports.metodo = function () {
-    console.log(datoCompartido);
-    console.log(privada());
-  }
-  exports.mensaje = datoCompartido;
-  ```
+console.log(config.token);
+```
 
-- **Importar los datos:**
-
-  ```javascript
-  const config = require('./config');
-
-  config.metodo();
-  console.log(config.mensaje);
-  ```
-
-### Modularización: Usando module.exports
-
-- **Exportar los datos:**
-
-  ```javascript
-  // archivo -> config.js
-  const config = {
-    token: "<--- MiSecreto--->",
-  };
-
-  module.exports = config;
-  ```
-
-- **Importar los datos:**
-
-  ```javascript
-  const config = require('./config');
-
-  console.log(config.token);
-  ```
-
-### NPM
+#### El gestor de paquetes por defecto: NPM
 
 ![npm_logo](../assets/npm.svg)
 
-**[Librerías interesantes de node](https://github.com/sindresorhus/awesome-nodejs#command-line-utilities)**
+**Comprobar versión**:
 
-- ** Comprobar versión**
+```bash
+npm -v
+```
 
-  ```
-  npm -v
-  ```
+**Instalar paquetes:**
 
-- **Instalar paquetes:**
-  - global:
+```bash
+# Global
+npm install -g <package_name>
 
-    ```
-    npm install -g <paquete>
-    ```
+# Local
+npm install <package_name>
 
-  - local:
+# Latest version
+npm install <paquete>@latest
 
-    ```
-    npm install <paquete>
-    ```
+# Some version
+npm install <package_name>@1.2.3
+```
 
-- **Buscar paquetes**
+**Buscar paquetes**:
 
-  ```
-  npm search <paquete>
-  ```
+```bash
+npm search <paquete>
+```
 
-- **Información de los paquetes**
+**Información de los paquetes**:
 
-  ```
-  npm view <paquete>
-  ```
+```bash
+npm view <paquete>
+```
 
-- **Lista de paquetes instalados**
+**Lista de paquetes instalados**:
 
-  ```
-  npm ls
-  ```
+```bash
+# Global
+npm ls -g
 
-- **Lista de paquetes instalados globalmente**
+# Local
+npm ls
+```
 
-  ```
-  npm ls -g
-  ```
+**[Más comandos - CLI](https://docs.npmjs.com/cli/install)**
 
-- **Instalando versiones especificas:**
-
-  - la más reciente:
-
-    ```
-    npm install <paquete>@latest
-    ```
-
-  - versión especifica:
-
-    ```
-    npm install <paquete>@1.x (1.xx.xx)
-    ```
-
-  - Otra versión especifica
-
-    ```
-    npm install <paquete>@2.10.x (2.10.x)
-    ```
-
-- **Paquetes desactualziados:**
-
-  ```
-  npm outdated
-  ```
-
-- **Actualizando paquetes:**
-
-  ```
-  npm update <paquete>
-  ```
-
-- **Desinstalando paquete:**
-
-  ```
-  npm uninstall <paquete>
-  ```
-
-- **Información sobre Bugs**
-
-  ```
-  npm bugs <paquete>
-  ```
-
-- **[Más comandos - CLI](https://docs.npmjs.com/cli/install)**
-
-### npx
+#### npx
 
 ![npx](../assets/npx.jpg)
 
@@ -1301,265 +1172,131 @@ npx -p node@8 npx cowsay "Hola"
 npx -p cowsay -p lolcatjs -c 'echo "$npm_package_name@$npm_package_version" | cowsay | lolcatjs'
 ```
 
-### Dependency Hell:
-
-**Abyssus abyssum invocat. El abismo llama al abismo.**
-
-- [nipster](http://nipstr.com/)
-- [Nodei.co](https://nodei.co/)
-- [Dependency Hell](http://www.wikiwand.com/en/Dependency_hell)
-- [David Dm](https://david-dm.org/)
-   - [Ejemplo Twitter-sentiments](https://david-dm.org/UlisesGascon/twitter-sentiments#info=dependencies&view=list)
-   - [Ejemplo Grunt](https://david-dm.org/gruntjs/grunt#info=dependencies&view=table)
-   - [Ejemplo Express](https://david-dm.org/strongloop/express)
-   - [Ejemplo Bower](https://david-dm.org/bower/bower#info=dependencies&view=table)
-- [ShieldsIO](http://shields.io/)
-   - [Your Badge Service](http://badges.github.io/gh-badges/)
-
-### Seguridad:
-- [Seguridad](https://nodesecurity.io/resources)
-- [Seguridad Avisos](https://nodesecurity.io/advisories)
-- [Recursos](https://nodesecurity.io/resources)
-- [snyk](https://snyk.io/test)
-
-### package.json
+#### Definición del proyecto, el fichero `package.json`
 
 - Datos proyecto
 - Tareas
 - Dependencias (dependencies y devDependencies)
 - **[Documentación](https://docs.npmjs.com/files/package.json)**
 
-- **Creación:**
+**Anatomía del fichero**:
 
-  ```
-  npm init
-  ```
-
-- **Guardar nuevas dependencias:**
-
-  ```
-  npm install <paquete> --save
-  ```
-
-- **Guardar nuevas dependencias (solo para entorno desarrollo):**
-
-  ```
-  npm install <paquete> --save -dev
-  ```
-
-- **Guardando versiones especificas:**
-  - (1.xx.xx):
-
-    ```
-    npm install --save <paquete>@1.x
-    ```
-
-  - (2.10.x)
-
-    ```
-    npm install --save <paquete>@2.10.x
-    ```
-
-  - Latest
-
-    ```
-    npm install --save <paquete>@lastest
-    ```
-
-- **Quitando dependencias:**
-
-  ```
-  npm uninstall <paquete> --save
-  ```
-
-- **Instalamos las dependencias en el proyecto:**
-  - todo:
-
-    ```
-    npm install (todo)
-    ```
-
-  - Solo production:
-
-    ```
-    npm install --production (solo producción)
-    ```
-
-  - Solo development:
-
-    ```
-    npm install --dev
-    ```
-
-- **[Semantic Versioning](http://semver.org/lang/es/)**
-  - Estructura -> X.Y.Z-Extra
-  - Cambio Mayor - *No retrocompatible*
-  - Cambio Menor - *Retrocompatible - Nuevas funcionaldiades o cambios*
-  - Parche - *Retrocompatible - Solución de errores*
-  - Extras - Indicativos o versiones especiales (Beta, Alfa, x86, etc...)
-
-### npm scripts (comandos de CLI)
-
-- **Añadiendo comandos:**
-
-  ```javascript
-  // ...
+```json
+{
+  "name": "hello-alligator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-      "test": "npm -v",
-      "start": "node -v",
-      "hola": "echo 'Hola mundo!'"
-  }
-  // ...
-  ```
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
+```
 
-- **Mostrando todos los comandos:**
+**¿Cómo se crea un proyecto?**
 
-  ```
-  npm run
-  ```
+```bash
+npm init
+```
 
-- **Ejecutando comandos:**
-  - test
+**Guardar nuevas dependencias**:
 
-    ```
-    npm test
-    ```
+```bash
+# Dependency
+npm install <package_name>
 
-  - start
+# Development dependency
+npm install <package_name> --save-dev
+```
 
-    ```
-    npm start
-    ```
+**[Semantic Versioning](http://semver.org/lang/es/)**:
+- Estructura -> X.Y.Z-Extra
+- Cambio Mayor - *No retrocompatible*
+- Cambio Menor - *Retrocompatible - Nuevas funcionaldiades o cambios*
+- Parche - *Retrocompatible - Solución de errores*
+- Extras - Indicativos o versiones especiales (Beta, Alfa, x86, etc...)
 
-  - hola
+#### npm scripts (comandos de CLI)
 
-    ```
-    npm run hola
-    ```
+**Añadiendo comandos**:
 
+```javascript
+"scripts": {
+  "test": "npm -v",
+  "start": "node -v",
+  "hello": "echo 'Hello World!'"
+}
+```
 
-### NVM  (manejando varias versiones de Node)
+**Mostrando todos los comandos**:
 
-- **Comrpobando la version de NVM:**
+```bash
+npm run
+```
 
-  ```
-  nvm --version
-  ```
+**Ejecutando comandos:**:
 
-- **Instalando una version:**
+```bash
+# Default commands
+npm test
 
-  ```
-  nvm install 0.12
-  ```
-
-- **Desinstalando una version:**
-
-  ```
-  nvm uninstall 0.12
-  ```
-
-- **Usar una version (globalmente):**
-
-  ```
-  nvm use 0.12
-  ```
-
-- **Usando versiones (por proyecto):**
-
-  ```
-  echo 0.12 > .nvmrc
-  ```
-
-  ```
-  nvm use
-  ```
-
-
-### Actualizando Node (método alternativo)
-- Sin soporte a Windows
-- Instalando el [paquete n](https://www.npmjs.com/package/n)
-
-  ```
-  npm install -g n
-  ```
-
-- **Opciones**
-
-  ```
-  n                              Output versions installed
-  n latest                       Install or activate the latest node release
-  n -a x86 latest                As above but force 32 bit architecture
-  n stable                       Install or activate the latest stable node release
-  n lts                          Install or activate the latest LTS node release
-  n <version>                    Install node <version>
-  n use <version> [args ...]     Execute node <version> with [args ...]
-  n bin <version>                Output bin path for <version>
-  n rm <version ...>             Remove the given version(s)
-  n --latest                     Output the latest node version available
-  n --stable                     Output the latest stable node version available
-  n --lts                        Output the latest LTS node version available
-  n ls                           Output the versions of node available
-  ```
-
+# Custom commands
+npm run hello
+```
 
 ### Ejercicios
 
 **1 -** Crea las rutas básicas para tener una página web clásica:
   - Debe responder con contenido HTML
   - `/`: Mostrará un título (`h1`) con el texto `Bienvenido`
-  - `/contact`: Aparecerá un listado (`ul`) con algunos datos personales (nombre, apellidos, email, ...)
   - `/about`: Se mostrará un pequeño texto introductorio
-  - `/bug`: Modificará todos los mensajes anteriores por la [siguiente imagen](https://www.iconexperience.com/_img/v_collection_png/256x256/shadow/bug_yellow_error.png)
-  - En el caso de que la ruta no exista se redigirá al index (`/`)
+  - `/image`: Mostrará la [siguiente imagen](https://media1.giphy.com/media/13CoXDiaCcCoyk/giphy.gif) sin utilizar HTML (Utiliza los tipos MIME y la librería `https`)
+  - En el caso de que la ruta no exista, se redireccionará al index (`/`)
 
 **Solución:**
 
 ```javascript
 const http = require('http');
+const https = require('https');
 const process = require('process');
 const url = require('url');
 
-let isBugged = false;
-
 http.createServer((req, res) => {
   const pathname = url.parse(req.url).pathname;
-  const bug = '<img src="https://www.iconexperience.com/_img/v_collection_png/256x256/shadow/bug_yellow_error.png">';
-  const welcome = '<h1>Bienvenido!!</h1>';
-  const about = 'Somos una empresa que usa <b>la ñ y otros caracteres especiales!</b>....';
-  const contact = `
-    <ul>
-      <li><b>Nombre:</b> Jose Luis</li>
-      <li><b>Apellidos:</b> Represa </li>
-    </ul>
-  `;
+  const welcome = '<h1>Wellcome!!</h1>';
+  const about = 'Some about text...';
 
-  res.writeHead(200, {
-    'Content-Type': 'text/html; charset=utf-8'
-  });
-
-  if(pathname === '/') {
-    res.end(isBugged ? bug : welcome);
-  } else if(pathname === '/about') {
-    res.end(isBugged ? bug : about);
-  } else if(pathname === '/contact') {
-    res.end(isBugged ? bug : contact);
-  } else if (pathname === '/bug') {
-    isBugged = true;
-    res.end(bug);
+  if (pathname === '/') {
+    res.end('Welcome!');
+  } else if (pathname === '/about') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8'
+    });
+    res.end(about);
+  } else if (pathname === '/image') {
+    res.writeHead(200, {
+      'Content-Type': 'image/gif'
+    });
+    https.get('https://media1.giphy.com/media/13CoXDiaCcCoyk/giphy.gif', (imageResponse) => {
+      imageResponse.pipe(res);
+    });
   } else {
     res.writeHead(301, {
-      'Location': '/'
+      Location: '/'
     });
   }
 }).listen(8080);
 ```
 
 **2 -** Crear un servidor web que al acceder te muestre el contenido del fichero que aparece en la url:
-  - Dada la siguiente url: `http://localhost/README.md`
-  - Hay que extraer el nombre del fichero con la librería `URL` (`README.md`)
-  - Leer el fichero con el `FileSystem` (`fs`):
-    - Si el fichero no existe, devolver un error 404
-    - Si el fichero existe, devolver el contenido del mismo
+Dada la siguiente url: `http://localhost/README.md`
+- Hay que extraer el nombre del fichero con la librería `URL` (`README.md`)
+- Leer el fichero con el `FileSystem` (`fs`):
+  - Si el fichero no existe, devolver un error 404
+  - Si el fichero existe, devolver el contenido del mismo
 
 **Solución:**
 
@@ -1575,12 +1312,16 @@ http.createServer((request, response) => {
   console.log(`Trying to find '${filename}'...`);
   fs.readFile(filename, (err, data) => {
     if (err) {
-      response.writeHead(404, {'Content-Type': 'text/html'});
+      response.writeHead(404, {
+	'Content-Type': 'text/html'
+      });
       response.write(`ERROR: Cannot find '${filename}'.`);
       console.log(`ERROR: Cannot find '${filename}'.`);
     } else {
       console.log(`Found '${filename}.`);
-      response.writeHead(200, {'Content-Type': 'text/html'});
+      response.writeHead(200, {
+	'Content-Type': 'text/html'
+      });
       response.write(data.toString());
     }
     response.end();
@@ -1608,8 +1349,8 @@ http.createServer((req, res) => {
 
   http.get(`http://www.omdbapi.com/?s=${search}&apikey=e9b5e65a`, (response) => {
     const { statusCode } = response;
-
     let rawData = '';
+
     response.setEncoding('utf8');
     response.on('data', (chunk) => rawData += chunk);
     response.on('end', () => {
@@ -1631,36 +1372,24 @@ http.createServer((req, res) => {
 }).listen(8080);
 ```
 
-**4 -** Realiza un script ejecutable que nos muestre la información de los terremotos acontecidos en la última hora.
-- [Fuente de datos](http://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php)
+**4 -** Realiza un script ejecutable que nos muestre la información de los personajes de la serie **Rick & Morty**.
+- [Fuente de datos](https://rickandmortyapi.com/documentation/#get-multiple-characters)
 - Requisitos:
-  - Debemos utilizar párametros cuando se ejecute para definir la magnitud de los terremotos que queremos
-  - Si no se detecta el parámetro... la aplicación debe cerrarse.
-  - Si el parametro es incorrecto también.
+  - El script se debe ejecutar con cualquier cantidad de parámetros, donde cada uno será la id de un personaje (Ej. `node my-script.js 1 2 3 4`)
+  - Si no se detecta el parámetro la aplicación debe cerrarse.
   - Ajustaremos la petición http en función del parámetro.
-- Apariencia(Orientativa):
+- Apariencia (orientativa):
 
-  ```
-  *****************************
-  USGS All Earthquakes, Past Hour
-     ---------------------
-  total: 8
-  status: 200
-     ---------------------
-  5/10/2016, 3:46:30 PM
-  ==============================
-  M 1.3 - 6km WNW of Anza, California
-  5/10/2016, 3:43:01 PM
-  Magnitud: 1.32
-  Estatus: automatic
-  Tipo: earthquake
-  Lugar: 6km WNW of Anza, California
-  Coordenadas: -116.7246704 , 33.5830002
-  Info: http://earthquake.usgs.gov/earthquakes/eventpage/ci37563240
-  Detalles: http://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/ci37563240.geojson
-  ==============================
-  ... (por cada terremoto de los iguales a los iguales)
-  ```
+```
+
+=============================
+Morty Smith
+-----------------------------
+Status: Alive
+Species: Human
+Image: https://rickandmortyapi.com/api/character/avatar/2.jpeg
+==============================
+```
 
 **Solución:**
 
@@ -1668,52 +1397,42 @@ http.createServer((req, res) => {
 #!/usr/bin/env node
 const https = require('https');
 
-if (!process.argv[2]) {
-  console.error('Necesito un parámetro para afinar mis resultados');
-  process.exit(1);
-} else if (!['all', '1.0', '2.5', '4.5', 'significant'].includes(process.argv[2])) {
-  console.error('Parámetro incorrecto!. Solo admito:\n  - all\n - 1.0\n - 2.5\n - 4.5\n - significant\n');
+const ids = process.argv.slice(2).join(',');
+
+if (!ids) {
+  console.error('Necesito al menos una ID como argumento');
   process.exit(1);
 }
 
-const options = {
-    host: 'earthquake.usgs.gov',
-    path: `/earthquakes/feed/v1.0/summary/${process.argv[2]}_hour.geojson`
-};
+function renderCharacter(character) {
+  console.log('=============================');
+  console.log(character.name);
+  console.log('-----------------------------');
+  console.log('Status:', character.status);
+  console.log('Species:', character.species);
+  console.log('Image:', character.image);
+  console.log('==============================');
+}
 
-https.get(options, (res) => {
-    let data = '';
+https.get({
+  host: 'rickandmortyapi.com',
+  path: `/api/character/${ids}`
+}, (res) => {
+  let data = '';
 
-    res.on('data', (chunk) => data += chunk);
-    res.on('end', () => {
-      console.log(data)
-      const json = JSON.parse(data);
+  res.on('data', (chunk) => data += chunk);
+  res.on('end', () => {
+    let json = JSON.parse(data);
 
-      console.log('*****************************');
-      console.log(json.metadata.title);
-      console.log('   ---------------------     ');
-      console.log('total:', json.metadata.count);
-      console.log('status:', json.metadata.status);
-      console.log('   ---------------------     ');
-      console.log(new Date(json.metadata.generated).toLocaleString('es-ES'));
-      console.log('==============================');
-      json.features.forEach((earthquake) => {
-        console.log(earthquake .properties.title);
-        console.log(new Date(earthquake .properties.time).toLocaleString('es-ES'));
-        console.log('Magnitud:', earthquake .properties.mag);
-        console.log('Estatus:', earthquake .properties.status);
-        console.log('Tipo:', earthquake .properties.type);
-        console.log('Lugar:', earthquake .properties.place);
-        console.log('Coordenadas:', earthquake .geometry.coordinates[0] + ' ,', earthquake .geometry.coordinates[1]);
-        console.log('Info:', earthquake .properties.url);
-        console.log('Detalles:', earthquake .properties.detail);
-        console.log('==============================');
-      });
-      process.exit(0);
+    if (!Array.isArray(json)) {
+      json = [json];
+    }
+
+    json.forEach((character) => renderCharacter(character));
   });
-}).on('error', function(e) {
-    console.log('Error fetching data:', e.message);
-    process.exit(1);
+}).on('error', (e) => {
+  console.log('Error fetching data:', e.message);
+  process.exit(1);
 });
 ```
 
@@ -1755,21 +1474,21 @@ const path = require('path');
 const PADDING = '  ';
 
 function renderDir(dir, level) {
-    console.log(PADDING.repeat(level) + path.basename(dir));
+  console.log(PADDING.repeat(level) + path.basename(dir));
 }
 
 function drawTree(dir, level = 0) {
-    const stats = fs.lstatSync(dir);
+  const stats = fs.lstatSync(dir);
 
-    if (stats.isDirectory()) {
-        renderDir(dir, level);
-        fs.readdirSync(dir)
-            .map((filename) => path.join(dir, filename))
-            .forEach((filepath) => drawTree(filepath, level + 1))
-    } else if (stats.isFile()){
-        renderDir(dir, level);
-    }
+  if (stats.isDirectory()) {
+    renderDir(dir, level);
+    fs.readdirSync(dir)
+      .map((filename) => path.join(dir, filename))
+      .forEach((filepath) => drawTree(filepath, level + 1))
+  } else if (stats.isFile()){
+    renderDir(dir, level);
+  }
 }
 
-drawTree(process.cwd())
+drawTree(process.cwd());
 ```
