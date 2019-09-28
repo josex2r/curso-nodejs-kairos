@@ -622,9 +622,6 @@ readFile('./README.md').then((content) => {
 
 #### Events
 
-
-![events](../assets/event-loop-simple.png)
-
 **Servidor HTTP y eventos**:
 - Sin eventos
 
@@ -692,6 +689,26 @@ pingPong.on('pong', () => {
 });
 
 pingPong.emit('ping');
+```
+
+**Heredando de `EventEmitter`**:
+
+```javascript
+const { EventEmitter } = require('events');
+
+class Foo extends EventEmitter {
+	constructor() {
+		super();
+
+		setInterval(() => {
+			this.emit('say-hello');
+		}, 1000);
+	}
+}
+
+const foo = new Foo();
+
+foo.on('say-hello', () => console.log('Hello!'));
 ```
 
 ##### Node.js Event Loop
@@ -931,23 +948,11 @@ if (cluster.isMaster) {
 - **Tamaño máximo 1GB**
 
 ```javascript
-const buf1 = new Buffer(10); // buf1.length = 10
-const buf2 = new Buffer([1,2,3]); // [01, 02, 03]
-const buf3 = new Buffer('prueba'); // ASCII [74, 65, 73, 74]
-const buf4 = new Buffer('ñam ñam', 'utf8'); // UTF8 [74, c3, a9, 73, 74]
+const buf4 = Buffer.from('ñam ñam', 'utf-8');
 
-console.log("===================================");
-console.log("buf1: " + buf1.length);
-console.log("buf2: " + buf2[0]);
-console.log("buf3: " + buf3);
-console.log("buf3 (hex): " + buf3.toString('hex'));
-console.log("buf3 (base64): " + buf3.toString('base64'));
-console.log("buf4: " + buf4);
-console.log("buf4 (hex): " + buf4.toString('hex'));
-console.log("buf4 (base64): " + buf4.toString('base64'));
-console.log("===================================");
+console.log(buf4)
+console.log(buf4.toString('utf-8'))
 ```
-
 
 #### Stream
 
