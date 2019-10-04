@@ -388,7 +388,7 @@ app.route('/pelicula')
 **Handlers: Varias funciones**:
 
 ```javascript
-app.get('/example/b', (req, res) => {
+app.get('/example/b', (req, res, next) => {
   console.log('La respuesta se enviará a la siguiente función...');
   next();
 }, (req, res) => {
@@ -396,7 +396,7 @@ app.get('/example/b', (req, res) => {
 });
 ```
 
-Handlers: Arrays
+**Handlers: Arrays**:
 
 ```javascript
 const cb0 = (req, res, next) => {
@@ -416,7 +416,7 @@ const cb2 = (req, res) => {
 app.get('/example/c', [cb0, cb1, cb2]);
 ```
 
-Handlers: Arrays y funciones
+**Handlers: Arrays y funciones**:
 
 ```javascript
 const cb0 = (req, res, next) => {
