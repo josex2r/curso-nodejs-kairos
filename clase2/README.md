@@ -274,7 +274,7 @@ Rutas: Capturando Parámetros (`http://localhost:8080/hola/Eduardo`, `http://loc
 
 ```javascript
 app.get('/hello/:nombre', (req, res) => {
-    res.send('Hola ' + req.nombre + '!');
+    res.send('Hola ' + req.params.nombre + '!');
 });
 ```
 
