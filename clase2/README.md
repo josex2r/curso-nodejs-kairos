@@ -238,7 +238,7 @@ app.get('/', (req, res, next) => {
 });
 ```
 
-Métodos HTTP: Otra forma de delimitar a un método
+Métodos HTTP: Otra forma de delimitar a un método ([method-override](https://github.com/expressjs/method-override))
 
 ```javascript
 app['m-search']('/', (req, res, next) => {
