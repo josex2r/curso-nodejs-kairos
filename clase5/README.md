@@ -1,4 +1,26 @@
-# Clase 5: Testing Unitario
+# Clase 5: Debugging y testing Unitario
+
+## Debugging
+
+### Node inspector
+
+Para ejecutar el inspector y arrancar el script utilizaremos:
+
+```
+node --inspect index.js
+```
+
+Si queremos añadir un punto de ruptura antes de ejecutar el código utilizaremos:
+
+```
+node --inspect-brk index.js
+```
+
+### [ndb](https://www.npmjs.com/package/ndb)
+
+![ndb](https://d33wubrfki0l68.cloudfront.net/41dc1da28494e86b499df4aec24029c40e992666/a9101/images/posts/2018-08-26-debugging-nodejs-application-in-chrome-devtools-using-ndb/debugging-nodejs-using-ndb.example.gif)
+
+## Testing
 
 > Una prueba unitaria es una forma de comprobar el correcto funcionamiento de una unidad de código.
 
@@ -315,3 +337,52 @@ function getFilm(id, adapter) {
 ```
 
 **5 -** Prueba los diferentes métodos del ejercicio [film-api#master](https://github.com/josex2r/film-api) utilizando la herramienta [supertest](https://www.npmjs.com/package/supertest):
+
+**6 -** Utilizando [ndb](https://www.npmjs.com/package/ndb) o el inspector de node, encuentra dónde está el problema en el siguiente servidor HTTP:
+
+```js
+const express = require('express');
+
+const app = express();
+const headers = [];
+
+app.use(function storeHeaders(req, res, next) {
+  headers.push(req.headers);
+  next();
+});
+
+app.get('/', function(req, res) {
+  res.send(`Hi!`);
+});
+
+app.listen(3000);
+```
+
+**7 -** ¿Y en el siguiente script?
+
+```js
+let theThing = null;
+
+const replaceThing = function () {
+  const originalThing = theThing;
+
+  function unused() {
+    if (originalThing) {
+      console.log('hi');
+    }
+  };
+
+  theThing = {
+    longStr: new Array(1000000).join('*'),
+    someMethod () {
+      console.log(someMessage);
+    }
+  };
+};
+
+setInterval(replaceThing, 1000);
+```
+
+**8 -** Partiendo del repositorio [debug-exercises#template](https://github.com/josex2r/debug-exercises/tree/template) arregla los errores de los ejercicios utilizando herramientas de debugging:
+
+- **[Solución](https://github.com/josex2r/debug-exercises)**
