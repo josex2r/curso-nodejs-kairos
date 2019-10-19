@@ -142,6 +142,20 @@ $ mocha --compilers js:babel-core/register -r babel-polyfill tests/*.js
   });
   ```
 
+  ```javascript
+  it('receives two params', () => {
+    // Async test code
+    return promise;
+  });
+  ```
+
+  ```javascript
+  it('receives two params', async(callback) => {
+    // Async test code
+    await promise;
+  });
+  ```
+
 - `before`: Se ejecuta una única vez antes de empezar la suite (puede agruparse dentro de un `describe`)
 
   ```javascript
