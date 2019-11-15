@@ -452,7 +452,8 @@ function writeResponse(response) {
 
 function sleepSynch(seconds, response) {
   const startTime = new Date().getTime();
-  while (new Date().getTime() < startTime + Math.floor((Math.random() * 1000) + 500) * seconds) {
+  
+  while (new Date().getTime() < startTime + seconds) {
     // Nothing happens....
   }
   writeResponse(response);
@@ -460,7 +461,7 @@ function sleepSynch(seconds, response) {
 
 http.createServer(function(request, response) {
   console.log('Request started... ', count);
-  sleepSynch(10, response);
+  sleepSynch(3000, response);
   count++;
 }).listen(8080);
 ```
@@ -828,37 +829,6 @@ Creamos el fichero
 console.log('Hello World!');
 ```
 
-####  Child Process
-
-- Ideal para tareas pesadas, inestables o muy lentas.
-- Nos permite usar comandos del sistema.
-- Podemos lanzar aplicaciones basadas en otros lenguajes o sistemas.
-
-`spawn` devuelve un **stream**:
-
-```javascript
-const spawn = require('child_process').spawn;
-const ping = spawn('ping', ['fictizia.com']);
-
-ping.stdout.setEncoding('utf8');
-ping.stdout.on('data', console.log);
-```
-
-`exec` retorna un **buffer**:
-
-```javascript
-const { exec } = require('child_process');
-
-  // cat solo funciona en UNIX
-exec('cat README.md', (err, stdout, stderr) => {
-  if(!err){
-    console.log('El contenido de nuestro archivo', stdout)
-  } else {
-    console.log('Error: '+err)
-  }
-});
-```
-
 #### Cluster
 
 > Cada instancia de Node.js se ejecuta en un único hilo. Para sacarle partido a los procesadores de varios núcleos utilizaremos la librería `cluster`.
@@ -1037,6 +1007,36 @@ http.createServer((request, response) => {
 }).listen(8080);
 ```
 
+####  Child Process
+
+- Ideal para tareas pesadas, inestables o muy lentas.
+- Nos permite usar comandos del sistema.
+- Podemos lanzar aplicaciones basadas en otros lenguajes o sistemas.
+
+`spawn` devuelve un **stream**:
+
+```javascript
+const spawn = require('child_process').spawn;
+const ping = spawn('ping', ['fictizia.com']);
+
+ping.stdout.setEncoding('utf8');
+ping.stdout.on('data', console.log);
+```
+
+`exec` retorna un **buffer**:
+
+```javascript
+const { exec } = require('child_process');
+
+  // cat solo funciona en UNIX
+exec('cat README.md', (err, stdout, stderr) => {
+  if(!err){
+    console.log('El contenido de nuestro archivo', stdout)
+  } else {
+    console.log('Error: '+err)
+  }
+});
+```
 
 #### Variables del Entorno
 
