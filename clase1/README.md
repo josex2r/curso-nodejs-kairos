@@ -387,10 +387,10 @@ const { URL } = require('url');
 
 const demoURL = new URL("http://localhost:3000/ruta?parametro=dato#detalle");
 
-console.log(`Host: ${demoURLhostname}`);
+console.log(`Host: ${demoURL.hostname}`);
 console.log(`Puerto: ${demoURL.port}`);
 console.log(`Ruta: ${demoURL.pathname}`);
-console.log(`Parámetros: ${JSON.stringify(demoURL.query)}`);
+console.log(`Parámetros: ${demoURL.searchParams}`);
 console.log(`Hash: ${demoURL.hash}`);
 ```
 
