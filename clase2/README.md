@@ -64,64 +64,6 @@ app.get('/', (req, res) => res.send('Hello World!'));
 app.listen(8080, () => console.log('Example app listening on port 8080'));
 ```
 
-## Generador de Express
-
-El generador de aplicaciones se utiliza para crear rápidamente un esqueleto de aplicación.
-
-### Instalación
-
-```bash
-npm install express-generator -g
-
-# Se puede generar el proyecto utilizando "npx"
-npx express-generator <project_name>
-```
-
-Generar un proyecto (genera un directorio)
-
-```bash
-express <project_name>
-```
-
-Entramos en la carpeta e instalamos las dependencias
-
-```bash
-cd <nombre_proyecto> && npm install
-```
-
-### Estructura de un Proyecto (MVC)
-
-```
-├── app.js (Nuestra aplicación - módulo)
-├── bin (Gestión de la aplicación)
-│   └── www
-├── package.json (Información y dependencias)
-├── public (Nuestros estáticos)
-│   ├── images
-│   ├── javascripts
-│   └── stylesheets
-│       └── style.css
-├── routes (Nuestros controladores)
-│   ├── index.js
-│   └── users.js
-└── views (Nuestras vistas/plantillas)
-    ├── error.jade
-    ├── index.jade
-    └── layout.jade
-```
-
-### Ejecutando la aplicación
-
-```bash
-# Window
-set DEBUG=<nombre_proyecto>:* & npm start
-
-# UNIX
-DEBUG=<nombre_proyecto>:* npm start
-```
-
-> **Opcional**: [Volviendo el arranque al estilo Express 3.x](http://expressjs.com/es/guide/migrating-4.html#app-gen)
-
 ### Funcionalidades
 
 - [express()](http://expressjs.com/es/4x/api.html#express)
@@ -142,7 +84,6 @@ Ej. Guardando la versión de la aplicación
 app.set('version', '1.5.0');
 app.get('version'); // 1.5.0
 ```
-
 
 ```javascript
 app.enable('dia_soleado'); // igual a -> app.set('dia_soleado', true);
@@ -197,7 +138,16 @@ app.get('/', (req, res) => {
 const express = require('express');
 const app = express();
 
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
+
+app.get('/', (req, res) => {
+  res.locals.title = 'Nope...';
+
+  res.render('index', {
+    title: 'Login'
+  });
+});
 
 app.listen(8080);
 ```
@@ -219,7 +169,7 @@ Estructura:
   - Para todas las rutas usamos *app.all()*
 - `<route_name>`: **Ruta (url) donde aplica**
   - Cadenas de texto
-  - Patrones en casenas de texto (Reducido a los subconjuntos: `?`, `+`, `*`, y `()`)
+  - Patrones en cadenas de texto (Reducido a los subconjuntos: `?`, `+`, `*`, y `()`)
   - [Expresiones regulares](https://regex101.com/)
 - `callback`: **La función que será llamada cuando se alcance la ruta con el método correctos**
   - Se pueden usar funciones
@@ -506,12 +456,12 @@ app.use((req, res, next) => {
 const express = require('express');
 const app = express();
 
-function chivato (req, res, next) {
+function logger(req, res, next) {
   console.log(`Nueva petición en ${req.url} con el método ${req.method}`);
   next();
  };
 
-app.use(chivato);
+app.use(logger);
 
 app.get('/', (req, res) => {
   res.send('Hola a todos!');
@@ -735,6 +685,64 @@ module.exports = (req, res, next) => {
 ```
 
 **[Ejemplos con Express](https://github.com/expressjs/express/tree/master/examples)**
+
+### Generador de Express
+
+El generador de aplicaciones se utiliza para crear rápidamente un esqueleto de aplicación.
+
+#### Instalación
+
+```bash
+npm install express-generator -g
+
+# Se puede generar el proyecto utilizando "npx"
+npx express-generator <project_name>
+```
+
+Generar un proyecto (genera un directorio)
+
+```bash
+express <project_name>
+```
+
+Entramos en la carpeta e instalamos las dependencias
+
+```bash
+cd <nombre_proyecto> && npm install
+```
+
+### Estructura de un Proyecto (MVC)
+
+```
+├── app.js (Nuestra aplicación - módulo)
+├── bin (Gestión de la aplicación)
+│   └── www
+├── package.json (Información y dependencias)
+├── public (Nuestros estáticos)
+│   ├── images
+│   ├── javascripts
+│   └── stylesheets
+│       └── style.css
+├── routes (Nuestros controladores)
+│   ├── index.js
+│   └── users.js
+└── views (Nuestras vistas/plantillas)
+    ├── error.jade
+    ├── index.jade
+    └── layout.jade
+```
+
+#### Ejecutando la aplicación
+
+```bash
+# Window
+set DEBUG=<nombre_proyecto>:* & npm start
+
+# UNIX
+DEBUG=<nombre_proyecto>:* npm start
+```
+
+> **Opcional**: [Volviendo el arranque al estilo Express 3.x](http://expressjs.com/es/guide/migrating-4.html#app-gen)
 
 ### PUG (antes Jade)
 
