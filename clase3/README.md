@@ -100,6 +100,21 @@ inStream.currentCharCode = 65;
 inStream.pipe(outStream);
 ```
 
+### Implementando un stream de transformación
+
+```js
+const { Transform } = require('stream');
+
+const upperCaseTr = new Transform({
+    transform(chunk, encoding, callback) {
+	this.push(chunk.toString().toUpperCase());
+	callback();
+    }
+});
+
+process.stdin.pipe(upperCaseTr).pipe(process.stdout);
+```
+
 > [Más info](https://medium.freecodecamp.org/node-js-streams-everything-you-need-to-know-c9141306be93)
 
 ## WebSockets
