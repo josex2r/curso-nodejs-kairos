@@ -422,7 +422,7 @@ io.use((socket, next) => {
 
 ```bash
 # npm
-npm install -g heroku-cli
+npm install -g heroku
 
 #Linux
 wget -O- https://toolbelt.heroku.com/install-ubuntu.sh | sh
