@@ -358,12 +358,21 @@ function getFilm(id, adapter) {
 const express = require('express');
 
 const app = express();
-const headers = [];
 
-app.use(function storeHeaders(req, res, next) {
-  headers.push(req.headers);
-  next();
-});
+function logger(history = []) {
+  return (req, res, next) => {
+    const trace = `[${req.method}] ${req.url}`;
+
+    history.push({
+      request: req,
+      trace
+    });
+    console.log(trace);
+    next();
+  };
+}
+
+app.use(logger([]));
 
 app.get('/', function(req, res) {
   res.send(`Hi!`);
@@ -375,26 +384,19 @@ app.listen(3000);
 **7 -** ¿Y en el siguiente script?
 
 ```js
-let theThing = null;
+const text = new Array(1000000).join('*');
 
-const replaceThing = function () {
-  const originalThing = theThing;
-
-  function unused() {
-    if (originalThing) {
-      console.log('hi');
+const splitLongText = function (data, char = '') {
+  function log() {
+    if (data) {
+      console.log(data);
     }
   };
 
-  theThing = {
-    longStr: new Array(1000000).join('*'),
-    someMethod () {
-      console.log(someMessage);
-    }
-  };
+  console.log(data.split(char));
 };
 
-setInterval(replaceThing, 1000);
+setInterval(() => splitLongText(text), 1000);
 ```
 
 **8 -** Partiendo del repositorio [debug-exercises#template](https://github.com/josex2r/debug-exercises/tree/template) arregla los errores de los ejercicios utilizando herramientas de debugging:
